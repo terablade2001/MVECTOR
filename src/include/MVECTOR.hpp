@@ -41,7 +41,7 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.001)
+#define MVECTOR_VERSION (0.002)
 #define MVECTOR_STEP_ELEMENTS (1024)
 #define MVECTOR_STEP_ELEMENTS_BACK (10*1024)
 
@@ -55,17 +55,15 @@ template<class T>
 class MVECTOR {
 public:
 	MVECTOR();
-	MVECTOR(
-		size_t elements_,
-		size_t step_elements_ = ((size_t)-1)
-	);
-	MVECTOR(
-		size_t elements_,
-		T init_value_,
-		size_t step_elements_ = ((size_t)-1)
-	);
+	MVECTOR(size_t elements_);
+	MVECTOR(size_t elements_, T init_value_);
 	~MVECTOR();
 	
+	void initialize(size_t elements_);
+	void set_steps(
+		size_t step_elements_,
+		size_t step_elements_back_ = ((size_t)-1)
+	);
 	void resize(size_t new_elements_);
 	void resize(size_t new_elements_, T value_);
 	int clear();
@@ -74,73 +72,83 @@ public:
 	T* data();
 	T &operator[](size_t index_);
 	void push_back(T value_);
-	void pop_back(T value_);
+	void pop_back();
 
 private:
 	T* pdata;
 	size_t elements;
 	size_t mem_elements;
 	size_t step_elements;
+	size_t step_elements_back;
 }; // class MVECTOR
 
 
 
 //@#| ############### Template - Constructors ###############
-template <class T>
-MVECTOR<T>::MVECTOR() :
+template <class T> MVECTOR<T>::MVECTOR() :
 	pdata(NULL),
 	elements(0),
 	mem_elements(0),
-	step_elements(MVECTOR_STEP_ELEMENTS)
+	step_elements(MVECTOR_STEP_ELEMENTS),
+	step_elements_back(MVECTOR_STEP_ELEMENTS_BACK)
 {
-
 }
 
-template <class T>
-MVECTOR<T>::~MVECTOR() {
-    clear();
+template <class T> MVECTOR<T>::~MVECTOR() {
+	clear();
+}
+
+template <class T> MVECTOR<T>::MVECTOR(
+	size_t elements_
+) :
+	pdata(NULL),
+	elements(0),
+	mem_elements(0),
+	step_elements(MVECTOR_STEP_ELEMENTS),
+	step_elements_back(MVECTOR_STEP_ELEMENTS_BACK)
+{
+	initialize(elements_);
 }
 
 
 template <class T> MVECTOR<T>::MVECTOR(
 	size_t elements_,
-	size_t step_elements_
+	T init_value_
 ) :
 	pdata(NULL),
 	elements(0),
 	mem_elements(0),
-	step_elements(MVECTOR_STEP_ELEMENTS)
+	step_elements(MVECTOR_STEP_ELEMENTS),
+	step_elements_back(MVECTOR_STEP_ELEMENTS_BACK)
 {
-	if (step_elements_ != ((size_t)-1))
-		step_elements = step_elements_;
-	if (elements_ == 0) return;
-	size_t align_elements = ((elements_ / step_elements) + 1) * step_elements;
-	pdata = (T*)malloc(align_elements * sizeof(T));
-	elements = elements_;
-	mem_elements = align_elements;
-}
-
-
-template <class T> MVECTOR<T>::MVECTOR(
-	size_t elements_,
-	T init_value_,
-	size_t step_elements_
-) :
-	pdata(NULL),
-	elements(0),
-	mem_elements(0),
-	step_elements(MVECTOR_STEP_ELEMENTS)
-{
-	if (step_elements_ != ((size_t)-1))
-		step_elements = step_elements_;
-	if (elements_ == 0) return;
-	size_t align_elements = ((elements_ / step_elements) + 1) * step_elements;
-	pdata = (T*)malloc(align_elements * sizeof(T));
-	elements = elements_;
-	mem_elements = align_elements;
+	initialize(elements_);
 	for (size_t i = 0; i < elements; i++)
 		pdata[i] = init_value_;	
 }
+
+
+template <class T>
+void MVECTOR<T>::initialize(
+	size_t elements_
+) {
+	if (elements_ == 0) return;
+	size_t align_elements = ((elements_ / step_elements) + 1) * step_elements;
+	pdata = (T*)malloc(align_elements * sizeof(T));
+	elements = elements_;
+	mem_elements = align_elements;
+}
+
+template <class T>
+void MVECTOR<T>::set_steps(
+	size_t step_elements_,
+	size_t step_elements_back_
+) {
+	step_elements = step_elements_;
+	if (step_elements_back_ != ((size_t)-1))
+		step_elements_back = step_elements_back_;
+}
+	
+
 
 //@#: ############### .HPP file ###############
 template <class T> void MVECTOR<T>::resize (size_t new_elements_) {
@@ -162,7 +170,7 @@ template <class T> void MVECTOR<T>::resize (size_t new_elements_, T value_) {
 }
 
 template <class T> size_t MVECTOR<T>::bytes () {
-	return size() * sizeof(T);
+	return mem_elements * sizeof(T);
 }
 
 template <class T> T* MVECTOR<T>::data() {
@@ -182,11 +190,14 @@ template <class T> void MVECTOR<T>::push_back(T value_) {
 	pdata[elements-1] = value_;
 }
 
-template <class T> void MVECTOR<T>::pop_back(T value_) {
+template <class T> void MVECTOR<T>::pop_back() {
 	if (elements == 0) return;
 	elements--;
-	if (mem_elements - elements >= MVECTOR_STEP_ELEMENTS_BACK)
-		resize(elements);
+	if (mem_elements - elements >= step_elements_back) {
+		size_t align_elements = ((elements / step_elements) + 1) * step_elements;
+		if (align_elements != mem_elements)
+			resize(elements);
+	}
 }
 	
 
