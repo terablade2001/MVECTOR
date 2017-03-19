@@ -30,6 +30,8 @@
 #include <cstdio>
 #include <limits>
 
+#define MVECTOR_USE__NEW
+
 #ifdef _MSC_VER
 	#define snprintf _snprintf_s
 	#define __MVECTOR_FOPEN__(fp, fname, mode) fopen_s(&fp, fname, mode)
@@ -41,7 +43,7 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.002)
+#define MVECTOR_VERSION (0.003)
 #define MVECTOR_STEP_ELEMENTS (1024)
 #define MVECTOR_STEP_ELEMENTS_BACK (10*1024)
 
@@ -50,6 +52,17 @@ using namespace std;
 namespace MVECTOR {
 
 template<class T> class MVECTOR;
+template<class T > class s_mvector_deleter;
+
+#ifdef MVECTOR_USE__NEW
+template<class T >
+class s_mvector_deleter {
+public: 
+  void operator()(T* p) { 
+    delete[] p; 
+  }
+};
+#endif
 
 template<class T>
 class MVECTOR {
@@ -80,6 +93,9 @@ private:
 	size_t mem_elements;
 	size_t step_elements;
 	size_t step_elements_back;
+#ifdef MVECTOR_USE__NEW
+	std::shared_ptr<T> sptr;
+#endif
 }; // class MVECTOR
 
 
@@ -133,7 +149,13 @@ void MVECTOR<T>::initialize(
 ) {
 	if (elements_ == 0) return;
 	size_t align_elements = ((elements_ / step_elements) + 1) * step_elements;
+#ifndef MVECTOR_USE__NEW
 	pdata = (T*)malloc(align_elements * sizeof(T));
+#endif
+#ifdef MVECTOR_USE__NEW
+	sptr = std::shared_ptr<T>(new T[align_elements], s_mvector_deleter<T>());
+	pdata = sptr.get();
+#endif
 	elements = elements_;
 	mem_elements = align_elements;
 }
@@ -154,11 +176,28 @@ void MVECTOR<T>::set_steps(
 template <class T> void MVECTOR<T>::resize (size_t new_elements_) {
 	if (new_elements_ == 0) { clear(); return; }
 	bool do_copy = ((pdata != NULL) && (elements > 0));
-	T* pdata_old = pdata;
+	T* pdata_old = NULL;
 	size_t align_elements = ((new_elements_ / step_elements) + 1) * step_elements;
+#ifndef MVECTOR_USE__NEW
+	if (do_copy) pdata_old = pdata;
 	pdata = (T*)malloc(align_elements * sizeof(T));
-	if (do_copy) memcpy(pdata, pdata_old, elements * sizeof(T));
-	free(pdata_old);
+	if (do_copy) {
+		memcpy(pdata, pdata_old, elements * sizeof(T));
+		free(pdata_old);
+	}
+#endif
+#ifdef MVECTOR_USE__NEW
+	std::shared_ptr<T> sptr_old;
+	if (do_copy) {
+		 sptr_old = sptr;
+		 pdata_old = sptr_old.get();
+	}
+	sptr = std::shared_ptr<T>(new T[align_elements], s_mvector_deleter<T>());
+	pdata = sptr.get();
+	if (do_copy)
+		for (size_t i = 0; i < elements; i++) pdata[i] = pdata_old[i];
+#endif
+	
 	elements = new_elements_;
 	mem_elements = align_elements;
 }
@@ -204,7 +243,12 @@ template <class T> void MVECTOR<T>::pop_back() {
 template <class T>
 int MVECTOR<T>::clear() {
 	if (pdata == NULL) return 1;
+#ifndef MVECTOR_USE__NEW
 	free(pdata);
+#endif
+#ifdef MVECTOR_USE__NEW
+	sptr.reset();
+#endif
 	pdata = NULL;
 	elements = 0;
 	mem_elements = 0;

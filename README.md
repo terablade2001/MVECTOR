@@ -9,6 +9,4 @@ I deciced to create this library because in some embedded platforms I
 noticed that std::vector memory allocations had undesirable results (i.e. 
 aliased memory allocated regions(!)).
 
-In this library I'm using standard malloc/free operations.
-
 This library is under development. It may not work correct!
