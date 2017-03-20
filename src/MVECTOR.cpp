@@ -23,8 +23,21 @@
 #include "include/MVECTOR.hpp"
 
 using namespace std;
+
 namespace ns_MVECTOR {
-std::atomic<size_t> MVECTOR_Base::Total_MVECTOR_Bytes;
+
+#ifdef MVECTOR_MAX_GROUPS
+MVECTOR_Base::MVECTOR_Base():
+	GroupID(0)
+{}
+#endif
+
+std::atomic<size_t> MVECTOR_Base::Total_MVECTOR_Bytes(0);
+
+#ifdef MVECTOR_MAX_GROUPS
+std::atomic<size_t> MVECTOR_Base::Group_MVECTOR_Bytes[MVECTOR_MAX_GROUPS];
+#endif
+
 }; // namespace MVECTOR
 
 

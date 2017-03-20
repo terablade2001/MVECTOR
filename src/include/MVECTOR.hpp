@@ -44,7 +44,9 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.005)
+#define MVECTOR_VERSION (0.006)
+
+#define MVECTOR_MAX_GROUPS (64)
 #define MVECTOR_STEP_ELEMENTS (1024)
 #define MVECTOR_STEP_ELEMENTS_BACK (10*1024)
 
@@ -66,8 +68,15 @@ public:
 #endif
 
 class MVECTOR_Base {
+public:
 	static std::atomic<size_t> Total_MVECTOR_Bytes;
+#ifdef MVECTOR_MAX_GROUPS
+	MVECTOR_Base();
+	static std::atomic<size_t> Group_MVECTOR_Bytes[MVECTOR_MAX_GROUPS];
+	int GroupID;
+#endif
 };
+
 
 template<class T>
 class MVECTOR : public MVECTOR_Base {
@@ -95,6 +104,10 @@ public:
 	T &operator[](size_t index_);
 	void push_back(T value_);
 	void pop_back();
+#ifdef MVECTOR_MAX_GROUPS
+	void set_group(int group_id_);
+	size_t total_bytes(int group_id_);
+#endif
 
 	int dbg;
 private:
@@ -172,6 +185,9 @@ void MVECTOR<T>::initialize(
 	elements = elements_;
 	mem_elements = align_elements;
 	Total_MVECTOR_Bytes += bytes();
+#ifdef MVECTOR_MAX_GROUPS
+	Group_MVECTOR_Bytes[GroupID] += bytes();
+#endif
 }
 
 template <class T>
@@ -194,6 +210,7 @@ template <class T> void MVECTOR<T>::resize (size_t new_elements_) {
 		(elements <= new_elements_)? elements : new_elements_;
 	T* pdata_old = NULL;
 	size_t align_elements = ((new_elements_ / step_elements) + 1) * step_elements;
+	size_t previous_bytes = bytes();
 #ifndef MVECTOR_USE__NEW
 	if (do_copy) pdata_old = pdata;
 	pdata = (T*)malloc(align_elements * sizeof(T));
@@ -215,7 +232,13 @@ template <class T> void MVECTOR<T>::resize (size_t new_elements_) {
 #endif
 	elements = new_elements_;
 	mem_elements = align_elements;
-	Total_MVECTOR_Bytes += bytes();
+	size_t current_bytes = bytes();
+	Total_MVECTOR_Bytes -= previous_bytes;
+	Total_MVECTOR_Bytes += current_bytes;
+#ifdef MVECTOR_MAX_GROUPS
+	Group_MVECTOR_Bytes[GroupID] -= previous_bytes;
+	Group_MVECTOR_Bytes[GroupID] += current_bytes;
+#endif
 }
 
 template <class T> void MVECTOR<T>::resize (size_t new_elements_, T value_) {
@@ -225,10 +248,9 @@ template <class T> void MVECTOR<T>::resize (size_t new_elements_, T value_) {
 }
 
 template <class T> void MVECTOR<T>::cresize (size_t new_elements_) {
-	if (new_elements_ == 0) { clear(); return; }
+	clear();
 	size_t align_elements = ((new_elements_ / step_elements) + 1) * step_elements;
 #ifndef MVECTOR_USE__NEW
-	if (pdata != NULL) free(pdata);
 	pdata = (T*)malloc(align_elements * sizeof(T));
 #endif
 #ifdef MVECTOR_USE__NEW
@@ -237,7 +259,11 @@ template <class T> void MVECTOR<T>::cresize (size_t new_elements_) {
 #endif
 	elements = new_elements_;
 	mem_elements = align_elements;
-	Total_MVECTOR_Bytes += bytes();
+	size_t current_bytes = bytes();
+	Total_MVECTOR_Bytes += current_bytes;
+#ifdef MVECTOR_MAX_GROUPS
+	Group_MVECTOR_Bytes[GroupID] += current_bytes;
+#endif
 }
 
 template <class T> void MVECTOR<T>::cresize (size_t new_elements_, T value_) {
@@ -287,7 +313,11 @@ template <class T> void MVECTOR<T>::pop_back() {
 template <class T>
 int MVECTOR<T>::clear() {
 	if (pdata == NULL) return 1;
-	Total_MVECTOR_Bytes -= bytes();
+	size_t current_bytes = bytes();
+	Total_MVECTOR_Bytes -= current_bytes;
+#ifdef MVECTOR_MAX_GROUPS
+	Group_MVECTOR_Bytes[GroupID] -= current_bytes;
+#endif
 #ifndef MVECTOR_USE__NEW
 	free(pdata);
 #endif
@@ -304,6 +334,25 @@ template <class T>
 size_t MVECTOR<T>::size() {
 	return elements;
 }
+
+
+
+#ifdef MVECTOR_MAX_GROUPS
+template <class T> size_t MVECTOR<T>::total_bytes(int group_id_) {
+	if (group_id_ >= MVECTOR_MAX_GROUPS) return (size_t)group_id_;
+	return Group_MVECTOR_Bytes[group_id_];
+}
+
+template <class T> void MVECTOR<T>::set_group(int group_id_) {
+	if (group_id_ >= MVECTOR_MAX_GROUPS) return;
+	size_t current_bytes = bytes();
+	if (current_bytes > 0)
+		Group_MVECTOR_Bytes[GroupID] -= current_bytes;
+	GroupID = group_id_;
+	if (current_bytes > 0)
+		Group_MVECTOR_Bytes[GroupID] += current_bytes;
+}
+#endif
 
 
 }; // namespace MVECTOR

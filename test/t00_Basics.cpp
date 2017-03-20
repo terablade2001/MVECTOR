@@ -124,18 +124,25 @@ int main(int argc, char **argv) {
 #else
 	{
 		MVECTOR<vector<char>> F5;
+        F5.set_group(1);
 		vector<char> v; v.resize(1,1);
 		printf("Check your system's memory. Press any key to fill!..\n");
         printf("*** Total Bytes: " __ZU__ "\n", BytesCounter.total_bytes());
+        printf("*** Group-0 Bytes: " __ZU__ "\n", BytesCounter.total_bytes(0));
+        printf("*** Group-1 Bytes: " __ZU__ "\n", BytesCounter.total_bytes(1));
 		getch();
 		F5.resize(50000000, v);
 		printf("Check your system's memory. Did you see allocation?..\n");
 		printf("Press any key to destroy F5 object, while checking the memory.\n");
         printf("*** Total Bytes: " __ZU__ "\n", BytesCounter.total_bytes());
+        printf("*** Group-0 Bytes: " __ZU__ "\n", BytesCounter.total_bytes(0));
+        printf("*** Group-1 Bytes: " __ZU__ "\n", BytesCounter.total_bytes(1));
 		getch();
 	}
 	printf("Check your system's memory;F5 destroyed. Did memory de-allocated?\n");
     printf("*** Total Bytes: " __ZU__ "\n", BytesCounter.total_bytes());
+    printf("*** Group-0 Bytes: " __ZU__ "\n", BytesCounter.total_bytes(0));
+    printf("*** Group-1 Bytes: " __ZU__ "\n", BytesCounter.total_bytes(1));
 	getch();
 #endif
 
