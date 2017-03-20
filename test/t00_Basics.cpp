@@ -26,17 +26,19 @@
 #include <vector>
 #include <conio.h>
 
+using namespace ns_MVECTOR;
+
 int main(int argc, char **argv) {
 	// Create F0 with 10-floats initialized with number 1.0.
 	printf("---------------------------- F0 ---------------------------------\n");
-	MVECTOR::MVECTOR<float> F0(10, 1);
+	MVECTOR<float> F0(10, 1);
 	printf("F0 size: " __ZU__ ", bytes: " __ZU__ "\n", F0.size(), F0.bytes());
 	for (size_t i = 0; i < 10; i++) printf("F0[i] = %f\n", F0[i]);
 
 	// Create F1 of type char. Update steps (memory de/allocation steps) and 
 	// test read/write operations.
 	printf("---------------------------- F1 ---------------------------------\n");
-	MVECTOR::MVECTOR<char> F1;
+	MVECTOR<char> F1;
 	F1.set_steps(10, 20);
 	F1.resize(11);
 	printf("F1 size: " __ZU__ ", bytes: " __ZU__ "\n", F1.size(), F1.bytes());
@@ -49,7 +51,7 @@ int main(int argc, char **argv) {
 	printf("---------------------------- F2 ---------------------------------\n");
 	short *pF2outer;
 	{
-		MVECTOR::MVECTOR<short> F2(2048);
+		MVECTOR<short> F2(2048);
 		printf("F2 size: " __ZU__ ", bytes: " __ZU__ "\n", F2.size(), F2.bytes());
 		for (size_t i = 0; i < 2048; i++) F2[i] = i;
 		short* pF2 = F2.data();
@@ -62,7 +64,7 @@ int main(int argc, char **argv) {
 
 	// Create F3 of type float, and test push_back and pop_back functions
 	printf("---------------------------- F3 ---------------------------------\n");
-	MVECTOR::MVECTOR<float> F3;
+	MVECTOR<float> F3;
 	F3.set_steps(5,5);
 	for (int i = 0; i < 21; i++)
 		F3.push_back(i);
@@ -85,7 +87,7 @@ int main(int argc, char **argv) {
 	printf("F4 requires that the #MVECTOR_USE__NEW to be defined! - Aborting!\n");
 #else
 	{
-		MVECTOR::MVECTOR<vector<float>> F4;
+		MVECTOR<vector<float>> F4;
 		for (size_t i = 0; i < 5; i++) {
 			vector<float> v;
 			F4.push_back(v);
@@ -113,7 +115,7 @@ int main(int argc, char **argv) {
 	printf("F5 requires that the #MVECTOR_USE__NEW to be defined! - Aborting!\n");
 #else
 	{
-		MVECTOR::MVECTOR<vector<char>> F5;
+		MVECTOR<vector<char>> F5;
 		vector<char> v; v.resize(1,1);
 		printf("Check your system's memory. Press any key to fill!..\n");
 		getch();

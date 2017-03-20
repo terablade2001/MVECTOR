@@ -43,13 +43,13 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.003)
+#define MVECTOR_VERSION (0.004)
 #define MVECTOR_STEP_ELEMENTS (1024)
 #define MVECTOR_STEP_ELEMENTS_BACK (10*1024)
 
 using namespace std;
 
-namespace MVECTOR {
+namespace ns_MVECTOR {
 
 template<class T> class MVECTOR;
 template<class T > class s_mvector_deleter;
@@ -79,6 +79,9 @@ public:
 	);
 	void resize(size_t new_elements_);
 	void resize(size_t new_elements_, T value_);
+	void cresize(size_t new_elements_);
+	void cresize(size_t new_elements_, T value_);
+
 	int clear();
 	size_t size();
 	size_t bytes();
@@ -87,6 +90,7 @@ public:
 	void push_back(T value_);
 	void pop_back();
 
+	int dbg;
 private:
 	T* pdata;
 	size_t elements;
@@ -102,6 +106,7 @@ private:
 
 //@#| ############### Template - Constructors ###############
 template <class T> MVECTOR<T>::MVECTOR() :
+	dbg(0),
 	pdata(NULL),
 	elements(0),
 	mem_elements(0),
@@ -117,6 +122,7 @@ template <class T> MVECTOR<T>::~MVECTOR() {
 template <class T> MVECTOR<T>::MVECTOR(
 	size_t elements_
 ) :
+	dbg(0),
 	pdata(NULL),
 	elements(0),
 	mem_elements(0),
@@ -131,6 +137,7 @@ template <class T> MVECTOR<T>::MVECTOR(
 	size_t elements_,
 	T init_value_
 ) :
+	dbg(0),
 	pdata(NULL),
 	elements(0),
 	mem_elements(0),
@@ -176,13 +183,15 @@ void MVECTOR<T>::set_steps(
 template <class T> void MVECTOR<T>::resize (size_t new_elements_) {
 	if (new_elements_ == 0) { clear(); return; }
 	bool do_copy = ((pdata != NULL) && (elements > 0));
+	size_t to_copy_elements =
+		(elements <= new_elements_)? elements : new_elements_;
 	T* pdata_old = NULL;
 	size_t align_elements = ((new_elements_ / step_elements) + 1) * step_elements;
 #ifndef MVECTOR_USE__NEW
 	if (do_copy) pdata_old = pdata;
 	pdata = (T*)malloc(align_elements * sizeof(T));
 	if (do_copy) {
-		memcpy(pdata, pdata_old, elements * sizeof(T));
+		memcpy(pdata, pdata_old, to_copy_elements * sizeof(T));
 		free(pdata_old);
 	}
 #endif
@@ -195,9 +204,8 @@ template <class T> void MVECTOR<T>::resize (size_t new_elements_) {
 	sptr = std::shared_ptr<T>(new T[align_elements], s_mvector_deleter<T>());
 	pdata = sptr.get();
 	if (do_copy)
-		for (size_t i = 0; i < elements; i++) pdata[i] = pdata_old[i];
+		for (size_t i = 0; i < to_copy_elements; i++) pdata[i] = pdata_old[i];
 #endif
-	
 	elements = new_elements_;
 	mem_elements = align_elements;
 }
@@ -207,6 +215,29 @@ template <class T> void MVECTOR<T>::resize (size_t new_elements_, T value_) {
 	for (size_t i = 0; i < new_elements_; i++)
 		pdata[i] = value_;
 }
+
+template <class T> void MVECTOR<T>::cresize (size_t new_elements_) {
+	if (new_elements_ == 0) { clear(); return; }
+	size_t align_elements = ((new_elements_ / step_elements) + 1) * step_elements;
+#ifndef MVECTOR_USE__NEW
+	if (pdata != NULL) free(pdata);
+	pdata = (T*)malloc(align_elements * sizeof(T));
+#endif
+#ifdef MVECTOR_USE__NEW
+	sptr = std::shared_ptr<T>(new T[align_elements], s_mvector_deleter<T>());
+	pdata = sptr.get();
+#endif
+	elements = new_elements_;
+	mem_elements = align_elements;
+}
+
+template <class T> void MVECTOR<T>::cresize (size_t new_elements_, T value_) {
+	cresize(new_elements_);
+	for (size_t i = 0; i < new_elements_; i++)
+		pdata[i] = value_;
+}
+
+
 
 template <class T> size_t MVECTOR<T>::bytes () {
 	return mem_elements * sizeof(T);
