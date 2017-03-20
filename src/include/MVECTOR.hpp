@@ -29,6 +29,7 @@
 #include <memory>
 #include <cstdio>
 #include <limits>
+#include <atomic>
 
 #define MVECTOR_USE__NEW
 
@@ -43,7 +44,7 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.004)
+#define MVECTOR_VERSION (0.005)
 #define MVECTOR_STEP_ELEMENTS (1024)
 #define MVECTOR_STEP_ELEMENTS_BACK (10*1024)
 
@@ -64,8 +65,12 @@ public:
 };
 #endif
 
+class MVECTOR_Base {
+	static std::atomic<size_t> Total_MVECTOR_Bytes;
+};
+
 template<class T>
-class MVECTOR {
+class MVECTOR : public MVECTOR_Base {
 public:
 	MVECTOR();
 	MVECTOR(size_t elements_);
@@ -85,6 +90,7 @@ public:
 	int clear();
 	size_t size();
 	size_t bytes();
+	size_t total_bytes();
 	T* data();
 	T &operator[](size_t index_);
 	void push_back(T value_);
@@ -165,6 +171,7 @@ void MVECTOR<T>::initialize(
 #endif
 	elements = elements_;
 	mem_elements = align_elements;
+	Total_MVECTOR_Bytes += bytes();
 }
 
 template <class T>
@@ -208,6 +215,7 @@ template <class T> void MVECTOR<T>::resize (size_t new_elements_) {
 #endif
 	elements = new_elements_;
 	mem_elements = align_elements;
+	Total_MVECTOR_Bytes += bytes();
 }
 
 template <class T> void MVECTOR<T>::resize (size_t new_elements_, T value_) {
@@ -229,6 +237,7 @@ template <class T> void MVECTOR<T>::cresize (size_t new_elements_) {
 #endif
 	elements = new_elements_;
 	mem_elements = align_elements;
+	Total_MVECTOR_Bytes += bytes();
 }
 
 template <class T> void MVECTOR<T>::cresize (size_t new_elements_, T value_) {
@@ -239,8 +248,12 @@ template <class T> void MVECTOR<T>::cresize (size_t new_elements_, T value_) {
 
 
 
-template <class T> size_t MVECTOR<T>::bytes () {
+template <class T> size_t MVECTOR<T>::bytes() {
 	return mem_elements * sizeof(T);
+}
+
+template <class T> size_t MVECTOR<T>::total_bytes() {
+	return Total_MVECTOR_Bytes;
 }
 
 template <class T> T* MVECTOR<T>::data() {
@@ -274,6 +287,7 @@ template <class T> void MVECTOR<T>::pop_back() {
 template <class T>
 int MVECTOR<T>::clear() {
 	if (pdata == NULL) return 1;
+	Total_MVECTOR_Bytes -= bytes();
 #ifndef MVECTOR_USE__NEW
 	free(pdata);
 #endif
