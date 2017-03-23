@@ -25,10 +25,15 @@
 #include "../src/include/MVECTOR.hpp"
 #include <vector>
 #include <conio.h>
+#ifndef _MSC_VER
+#define getch() getch()
+#else
+#define getch() _getch()
+#endif
 
 using namespace ns_MVECTOR;
 
-int main(int argc, char **argv) {
+int t00_Basics() {
     MVECTOR<char> BytesCounter;
 
 	// Create F0 with 10-floats initialized with number 1.0.
@@ -73,7 +78,7 @@ int main(int argc, char **argv) {
 	MVECTOR<float> F3;
 	F3.set_steps(5,5);
 	for (int i = 0; i < 21; i++)
-		F3.push_back(i);
+		F3.push_back((float)i);
 	printf("F3 size(): " __ZU__ ", Bytes: " __ZU__ "\n",
 		F3.size(), F3.bytes()
 	);

@@ -44,7 +44,7 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.006)
+#define MVECTOR_VERSION (0.007)
 
 #define MVECTOR_MAX_GROUPS (64)
 #define MVECTOR_STEP_ELEMENTS (1024)

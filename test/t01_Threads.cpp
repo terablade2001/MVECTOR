@@ -25,14 +25,16 @@
 #include "../src/include/MVECTOR.hpp"
 #include <vector>
 #include <conio.h>
-#include <pthread.h>
-#include <unistd.h>
 #include <atomic>
+#ifndef _MSC_VER
+#include <unistd.h>
+#include <pthread.h>
+#endif
 
 #define MAX_THREADS (100)
 
 using namespace ns_MVECTOR;
-
+#ifndef _MSC_VER
 #ifdef MVECTOR_MAX_GROUPS
 static int WaitFlag = 1;
 static pthread_mutex_t mutex_lock;
@@ -82,13 +84,16 @@ void *thread_function(void* tid) {
     return NULL;
 }
 #endif
+#endif
 
-int main(int argc, char **argv) {
+int t01_Threads() {
 #ifndef MVECTOR_MAX_GROUPS
 	printf("This test requires ns_MVECTOR::#MVECTOR_MAX_GROUPS to be defined!\n");
 	return -1;
 #else
-
+#ifdef _MSC_VER
+	printf("_MSC_VER detected: Can't use pThreads.\n");
+#else
 	int rc;
 	pthread_mutex_init(&mutex_lock, NULL);
 	pthread_attr_t attr;
@@ -115,6 +120,6 @@ int main(int argc, char **argv) {
 	pthread_attr_destroy(&attr);
 	pthread_mutex_destroy(&mutex_lock);
 #endif
-
+#endif
 	return 0;
 }

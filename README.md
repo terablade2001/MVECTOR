@@ -63,6 +63,32 @@ printf("Allocated memory for Group = 2: " __ZU__ " Bytes\n",
 );
 ```
 
+## Compile And Test using CMAKE
+
+### Windows10 using "make-3.81" and "cmake-3.8" and "TDM-GCC-64 5.1.0".
+Run from the main repository folder the following scripts in command prompt.
+```makefile
+mkdir build && cd build
+cmake -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+make
+
+# Test with:
+MVECTOR t00_Basics
+# or
+MVECTOR t01_Threads
+```
+
+### Windows10 using ie. MSVC 12.
+Run from the main repository folder the following scripts in command prompt.
+```makefile
+mkdir build && cd build
+cmake -G "Visual Studio 12 2013" ..
+
+# Open the .sln file via the MSVC-IDE and compile.
+# Test with:
+MVECTOR t00_Basics
+```
+
 
 ## Notes
 
