@@ -33,6 +33,9 @@
 
 #define MVECTOR_USE__NEW
 
+#define MVECTOR_USE__SLASH '\\'
+// #define MVECTOR_USE__SLASH '/'
+
 #ifdef _MSC_VER
 	#define snprintf _snprintf_s
 	#define __MVECTOR_FOPEN__(fp, fname, mode) fopen_s(&fp, fname, mode)
@@ -44,11 +47,15 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.007)
+#define MVECTOR_VERSION (0.008)
 
 #define MVECTOR_MAX_GROUPS (64)
 #define MVECTOR_STEP_ELEMENTS (1024)
 #define MVECTOR_STEP_ELEMENTS_BACK (10*1024)
+
+#ifndef __FNAME__
+	#define __FNAME__ (strrchr(__FILE__, MVECTOR_USE__SLASH) ? strrchr(__FILE__, MVECTOR_USE__SLASH) + 1 : __FILE__)
+#endif
 
 using namespace std;
 
@@ -84,6 +91,7 @@ public:
 	MVECTOR();
 	MVECTOR(size_t elements_);
 	MVECTOR(size_t elements_, T init_value_);
+	MVECTOR(const MVECTOR& mvector_);
 	~MVECTOR();
 	
 	void initialize(size_t elements_);
@@ -102,12 +110,16 @@ public:
 	size_t total_bytes();
 	T* data();
 	T &operator[](size_t index_);
+	T &operator=(T& mvector_);
 	void push_back(T value_);
 	void pop_back();
 #ifdef MVECTOR_MAX_GROUPS
 	void set_group(int group_id_);
 	size_t total_bytes(int group_id_);
 #endif
+	void get_steps(size_t& step_elements_, size_t& step_elements_back_);
+	T& front();
+	T& back();
 
 	int dbg;
 private:
@@ -132,6 +144,25 @@ template <class T> MVECTOR<T>::MVECTOR() :
 	step_elements(MVECTOR_STEP_ELEMENTS),
 	step_elements_back(MVECTOR_STEP_ELEMENTS_BACK)
 {
+}
+
+
+template <class T> MVECTOR<T>::MVECTOR(const MVECTOR& mvector_):
+	dbg(mvector_.dbg),
+	pdata(mvector_.pdata),
+	elements(mvector_.elements),
+	mem_elements(0),
+	step_elements(mvector_.step_elements),
+	step_elements_back(mvector_.step_elements_back)
+
+ {
+	size_t els = elements;
+	T* hdata = pdata;
+	elements = 0;
+	clear();
+	initialize(els);
+	for (size_t i = 0; i < els; i++)
+		pdata[i] = hdata[i];
 }
 
 template <class T> MVECTOR<T>::~MVECTOR() {
@@ -184,9 +215,10 @@ void MVECTOR<T>::initialize(
 #endif
 	elements = elements_;
 	mem_elements = align_elements;
-	Total_MVECTOR_Bytes += bytes();
+	size_t current_bytes = bytes();
+	Total_MVECTOR_Bytes += current_bytes;
 #ifdef MVECTOR_MAX_GROUPS
-	Group_MVECTOR_Bytes[GroupID] += bytes();
+	Group_MVECTOR_Bytes[GroupID] += current_bytes;
 #endif
 }
 
@@ -292,6 +324,24 @@ template <class T> T& MVECTOR<T>::operator[](size_t index_) {
 	return pdata[index_];
 }
 
+template <class T> T& MVECTOR<T>::operator=(T& mvector_) {
+	clear();
+	mvector_.get_steps(step_elements, step_elements_back);
+	initialize(mvector_.size());
+	for (int i = 0; i < mvector_.size(); i++)
+		pdata[i] = mvector_[i];
+	return mvector_;
+}
+
+template <class T> T& MVECTOR<T>::front() {
+	if (elements == 0) resize(1);
+	return pdata[0];
+}
+template <class T> T& MVECTOR<T>::back() {
+	if (elements == 0) resize(1);
+	return pdata[elements-1];
+}
+
 template <class T> void MVECTOR<T>::push_back(T value_) {
 	elements++;
 	if (elements >= mem_elements)
@@ -308,6 +358,15 @@ template <class T> void MVECTOR<T>::pop_back() {
 			resize(elements);
 	}
 }
+
+template <class T> void MVECTOR<T>::get_steps(
+	size_t& step_elements_,
+	size_t& step_elements_back_
+) {
+		step_elements_ = step_elements;
+		step_elements_back_ = step_elements_back;
+}
+
 	
 
 template <class T>
