@@ -47,7 +47,7 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.008)
+#define MVECTOR_VERSION (0.009)
 
 #define MVECTOR_MAX_GROUPS (64)
 #define MVECTOR_STEP_ELEMENTS (1024)
@@ -110,7 +110,7 @@ public:
 	size_t total_bytes();
 	T* data();
 	T &operator[](size_t index_);
-	T &operator=(T& mvector_);
+	MVECTOR<T>& operator=(MVECTOR<T>& mvector_);
 	void push_back(T value_);
 	void pop_back();
 #ifdef MVECTOR_MAX_GROUPS
@@ -324,13 +324,15 @@ template <class T> T& MVECTOR<T>::operator[](size_t index_) {
 	return pdata[index_];
 }
 
-template <class T> T& MVECTOR<T>::operator=(T& mvector_) {
-	clear();
-	mvector_.get_steps(step_elements, step_elements_back);
-	initialize(mvector_.size());
-	for (int i = 0; i < mvector_.size(); i++)
-		pdata[i] = mvector_[i];
-	return mvector_;
+template <class T> MVECTOR<T>& MVECTOR<T>::operator=(MVECTOR<T>& mvector_) {
+	if (this != &mvector_) {
+		clear();
+		mvector_.get_steps(step_elements, step_elements_back);
+		initialize(mvector_.size());
+		for (int i = 0; i < mvector_.size(); i++)
+			pdata[i] = mvector_[i];
+	}
+	return *this;
 }
 
 template <class T> T& MVECTOR<T>::front() {
