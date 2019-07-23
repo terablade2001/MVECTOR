@@ -33,9 +33,6 @@
 
 #define MVECTOR_USE__NEW
 
-#define MVECTOR_USE__SLASH '\\'
-// #define MVECTOR_USE__SLASH '/'
-
 #ifdef _MSC_VER
 	#define snprintf _snprintf_s
 	#define __MVECTOR_FOPEN__(fp, fname, mode) fopen_s(&fp, fname, mode)
@@ -47,14 +44,15 @@
 	#define __ZU__ "%zu"
 #endif
 
-#define MVECTOR_VERSION (0.009)
+#define MVECTOR_VERSION (0.010)
 
 #define MVECTOR_MAX_GROUPS (64)
 #define MVECTOR_STEP_ELEMENTS (1024)
 #define MVECTOR_STEP_ELEMENTS_BACK (10*1024)
 
 #ifndef __FNAME__
-	#define __FNAME__ (strrchr(__FILE__, MVECTOR_USE__SLASH) ? strrchr(__FILE__, MVECTOR_USE__SLASH) + 1 : __FILE__)
+	#define __FNAMEBSL__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
+	#define __FNAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FNAMEBSL__ )
 #endif
 
 using namespace std;
